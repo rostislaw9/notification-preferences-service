@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NotificationType {
+  marketing
+  transactional
+  system
+}
+
+enum Channel {
+  email
+  sms
+  push
+  messenger
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  region      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  preferences UserPreference[]
+  quietHours  QuietHours?
+
+  @@map("users")
+}
+
+model UserPreference {
+  id               String           @id @default(uuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationType NotificationType
+  channel          Channel
+  enabled          Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([userId, notificationType, channel])
+  @@map("user_preferences")
+}
+
+model DefaultPreference {
+  id               String           @id @default(uuid())
+  notificationType NotificationType
+  channel          Channel
+  enabled          Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([notificationType, channel])
+  @@map("default_preferences")
+}
+
+model GlobalPolicy {
+  id               String           @id @default(uuid())
+  notificationType NotificationType
+  channel          Channel
+  region           String?
+  enabled          Boolean          @default(true)
+  reason           String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([notificationType, channel, region])
+  @@map("global_policies")
+}
+
+model QuietHours {
+  id        String   @id @default(uuid())
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timezone  String
+  startHour Int
+  startMin  Int      @default(0)
+  endHour   Int
+  endMin    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quiet_hours")
+}
